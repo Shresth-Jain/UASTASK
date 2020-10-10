@@ -124,8 +124,9 @@ def PAYLOADDROP():
 	RPlat=radians(target.lat)-R*sin(radians(angle))
 	RPlong=radians(target.lon)-R*cos(radians(angle))
 	
-	drop=LocationGlobalRelative(RPlat,Rplong)
+	drop=LocationGlobalRelative(RPlat,RPlong)
 	print("Payload should be dropped at %s",drop)
+	return drop
 	
 #SCRIPT 1
 def UAVNAVIGATION():
@@ -175,12 +176,15 @@ def UAVNAVIGATION():
 			time.sleep(3)
 			break;
 			
-	PAYLOADDROP()
+	x=PAYLOADDROP()
 	time.sleep(3)
 	#Towards Waypoint 4
 	print("Going towards Fourth point ")
 	vehicle.simple_goto(point4)
 	while True:
+		if get_distance_metres(vehicle.location.global_frame,x)<0.001:
+			print("PAYLOAD DROPPED SUCCESSFULLY at %s" %x)
+			sleep(2)
 		distancetopoint = get_distance_metres(vehicle.location.global_frame, point4)
 		print(" Global Location: %s \n Distance from waypoint 4 %s" %(vehicle.location.global_frame,distancetopoint))
 		if distancetopoint<0.001:
