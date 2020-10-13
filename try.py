@@ -71,9 +71,8 @@ def arm_and_takeoff(aTargetAltitude):
 
 arm_and_takeoff(20)
 
-    
+
 def get_distance_metres(aLocation1, aLocation2):
-	#Applying logic from a research paper found on the net
 	# approximate radius of earth in km
 	R = 6373.0
 	lat1 = radians(aLocation1.lat)
@@ -88,50 +87,36 @@ def get_distance_metres(aLocation1, aLocation2):
 
 def PAYLOADDROP():
 	h=20
-	v=5
 	g=9.8
 	#assuming wind speed to be 0
 	m=2	#kg
-	area=4*3.14*2*2 #surface area = 4pi*r^2
+	area=3.14*2*2 #area perpendicular = pi*r^2
 	airdensity=1.204 #kg/m**3 at 20 degrees by google
 	q=0.5*airdensity*area*0.5 # by google drag coefficient of sphere in air is 0.5
-	R = 6373.0
-	t=0.02
-	N=3000
-	i=0		
+	t=0.0000000004
+	vx=3		#Horizontal velocity
 	vy=0		#vertical velocity
-	vx=v		#horizontal velocity
-	x=0
+	x=0			#Horizontal Displacement
 	y=0
 	tf=0
-	target= LocationGlobalRelative(-35.36248343, 149.16512541)
-	current=vehicle.location.global_frame
-	while i<N:
-		ax=-(q/m)*v**2
-		ay=g
+	while(h>0.00001):
+		ax=-(q/m)*vx**2
+		ay=g-(q/m)*vy**2
 		vx=vx+ax*t
 		vy=vy+ay*t
-		xf=x+vx*t+0.5*ax*t**2
-		yf=y+vy*t+0.5*ay*t**2
-		x=xf
-		y=yf
+		x=x+vx*t+0.5*ax*t**2
+		y=y+vy*t+0.5*ay*t**2
+		h=h-y
 		tf=tf+t
-		i=i+1
-		if(y==h):
-			range=x
-			break
-	angle=np.arctan(radians((target.lon-current.lon)/(target.lat-target.lon)))
-	RPlat=radians(target.lat)-R*sin(radians(angle))
-	RPlong=radians(target.lon)-R*cos(radians(angle))
-	
-	drop=LocationGlobalRelative(RPlat,RPlong)
-	print("Payload should be dropped at %s",drop)
-	return drop
-	
+	return x
+
 #SCRIPT 1
 def UAVNAVIGATION():
-	print("Set default/target airspeed to 5")
-	vehicle.airspeed = 5
+	Range=PAYLOADDROP()
+	#print(Range)
+	time.sleep(5)
+	print("Set default/target airspeed to 3")
+	vehicle.airspeed = 3
 	home= vehicle.location.global_frame
 	print(" Global Location: %s" % vehicle.location.global_frame)
 	time.sleep(3)
@@ -141,55 +126,22 @@ def UAVNAVIGATION():
 	point3= LocationGlobalRelative(-35.362452, 149.166185, 20.000000)
 	point4= LocationGlobalRelative(-35.363811, 149.166405, 20.000000)
 
-	#towards waypoint 1
+	target= LocationGlobalRelative(-35.36248343, 149.16512541, 20.00)
+	points=[point1,point2,point3,point4]
 
-	print("Going towards first point")
-	vehicle.simple_goto(point1)
-	while True:
-		distancetopoint = get_distance_metres(vehicle.location.global_frame, point1)
-		print(" Global Location: %s \n Distance from waypoint 1 %s" %(vehicle.location.global_frame,distancetopoint))
-		if distancetopoint<0.001:
-			print("Reached Waypoint1")
-			time.sleep(3)
-			break
-            
-	#Towards Waypoint 2
-	print("Going towards Second point ")
-	vehicle.simple_goto(point2)
-	while True:
-		distancetopoint = get_distance_metres(vehicle.location.global_frame, point2)
-		print(" Global Location: %s \n Distance from waypoint 2 %s" %(vehicle.location.global_frame,distancetopoint))
-		if distancetopoint<0.001:
-			print("Reached Waypoint2")
-			time.sleep(3)
-			break
-
-	#Towards Waypoint 3
-
-	print("Going towards Third point ")
-	vehicle.simple_goto(point3)
-	while True:
-		distancetopoint = get_distance_metres(vehicle.location.global_frame, point3)
-		print(" Global Location: %s \n Distance from waypoint 3 %s" %(vehicle.location.global_frame,distancetopoint))
-		if distancetopoint<0.001:
-			print("Reached Waypoint3")
-			time.sleep(3)
-			break;
-			
-	x=PAYLOADDROP()
-	time.sleep(3)
-	#Towards Waypoint 4
-	print("Going towards Fourth point ")
-	vehicle.simple_goto(point4)
-	while True:
-		if get_distance_metres(vehicle.location.global_frame,x)<0.001:
-			print("PAYLOAD DROPPED SUCCESSFULLY at %s" %x)
-			sleep(2)
-		distancetopoint = get_distance_metres(vehicle.location.global_frame, point4)
-		print(" Global Location: %s \n Distance from waypoint 4 %s" %(vehicle.location.global_frame,distancetopoint))
-		if distancetopoint<0.001:
-			print("Reached Waypoint4")
-			break
+	for item in points:
+		vehicle.simple_goto(item)
+		while True:
+			if (get_distance_metres(vehicle.location.global_frame,target)-Range)<0.001:
+				print("PAYLOAD DROPPED SUCCESSFULLY at %s" %vehicle.location.global_frame)
+				time.sleep(4)
+			distancetopoint = get_distance_metres(vehicle.location.global_frame, item)
+			print(" Global Location: %s \n Distance from waypoint %s" %(vehicle.location.global_frame,distancetopoint))
+			if distancetopoint<0.001:
+				print("Reached")
+				time.sleep(3)
+				break
+					 
 	print("Returning to Launch")
 	vehicle.mode = VehicleMode("RTL")
 	while True:
